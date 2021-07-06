@@ -20,7 +20,7 @@ func TestWorker(t *testing.T) {
 }
 ```
 
-### timeout control
+### Timeout control
 ```go
 // TestPipeFull When the channel is full the message will be discarded after 3s,Process will return a `ErrProcessTimeout` error
 func TestPipeFull(t *testing.T) {
@@ -62,7 +62,7 @@ func TestPipeFull(t *testing.T) {
 }
 ```
 
-## panic control
+## Panic control
 ```go
 // TestWorkerPanic The worker does not exit when it encounters a panic error. It will print a message
 func TestWorkerPanic(t *testing.T)  {
@@ -81,7 +81,7 @@ func TestWorkerPanic(t *testing.T)  {
 }
 ```
 
-## safe shutdown
+## Safe shutdown
 ```go
 // TestWorkerPanic Woker waits for processing to finish and closes
 func TestWaitWorker(t *testing.T)  {
