@@ -22,7 +22,7 @@ func TestWorker(t *testing.T) {
 
 ### Timeout control
 
-TestPipeFull When the channel is full the message will be discarded after 3s,Process will return a `ErrProcessTimeout` error
+TestPipeFull When the channel is full the message will be discarded after `3s`,Process will return a `ErrProcessTimeout` error
 
 ```go
 func TestPipeFull(t *testing.T) {
