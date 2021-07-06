@@ -29,9 +29,9 @@ type Worker struct {
 	maxSec time.Duration
 	fun    func(ctx context.Context, data interface{})
 	data   chan interface{}
-	stop   chan struct{}
-	group  *errgroup.Group
 
+	stop    chan struct{}
+	group   *errgroup.Group
 	runOnce sync.Once
 }
 
@@ -63,30 +63,35 @@ func (w *Worker) Process(ctx context.Context, data interface{}) error {
 
 func (w *Worker) Run() error {
 	w.runOnce.Do(func() {
-		for i := 0; i < w.num; i++ {
-			w.group.Go(func() error {
-			cycle:
-				for true {
-					select {
-					case data := <-w.data:
-						func() {
-							defer func() {
-								if err := recover(); err != nil {
-									fmt.Printf("Worker fatal error：%s\n", err)
-								}
-							}()
-							ctxFun, cancel := context.WithTimeout(w.ctx, w.maxSec)
-							w.fun(ctxFun, data)
-							cancel()
-						}()
-					case <-w.stop:
-						break cycle
-					}
-				}
-				return nil
-			})
-		}
+		run(w)
 	})
+	return nil
+}
+
+func run(w *Worker) error {
+	for i := 0; i < w.num; i++ {
+		w.group.Go(func() error {
+		cycle:
+			for true {
+				select {
+				case data := <-w.data:
+					func() {
+						defer func() {
+							if err := recover(); err != nil {
+								fmt.Printf("Worker fatal error：%s\n", err)
+							}
+						}()
+						ctxFun, cancel := context.WithTimeout(w.ctx, w.maxSec)
+						w.fun(ctxFun, data)
+						cancel()
+					}()
+				case <-w.stop:
+					break cycle
+				}
+			}
+			return nil
+		})
+	}
 	return nil
 }
 

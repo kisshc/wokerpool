@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// TestWorker 正常测试
+// TestWorker normal
 func TestWorker(t *testing.T) {
 	w := NewWorker()
 	w.HandleWork(1, 1, 2*time.Second, func(ctx context.Context, data interface{}) {
@@ -21,12 +21,14 @@ func TestWorker(t *testing.T) {
 	w.Process(ctx, "hello worker pool")
 
 	time.Sleep(1 * time.Second)
+	w.Shutdown()
 }
 
+// TestPipeFull timeout control
 func TestPipeFull(t *testing.T) {
 	w := NewWorker()
 	w.HandleWork(0, 1, 2*time.Second, func(ctx context.Context, data interface{}) {
-		// 处理时间增长
+		// delay 5s
 		time.Sleep(5 * time.Second)
 		t.Log(ctx.Deadline())
 		t.Log(data)
@@ -35,8 +37,6 @@ func TestPipeFull(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	// 并发放入两条任务，每个任务执行5s
-	// 第一个顺利加入
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -48,7 +48,7 @@ func TestPipeFull(t *testing.T) {
 		}
 	}()
 
-	// 三秒超时
+	// 3s timeout
 	wg.Add(1)
 	go func() {
 		wg.Done()
@@ -61,4 +61,42 @@ func TestPipeFull(t *testing.T) {
 	}()
 
 	wg.Wait()
+	w.Shutdown()
+}
+
+// TestWorkerPanic worker panic control
+func TestWorkerPanic(t *testing.T) {
+	w := NewWorker()
+	w.HandleWork(0, 1, 2*time.Second, func(ctx context.Context, data interface{}) {
+		panic("panic err")
+		t.Log(ctx.Deadline())
+		t.Log(data)
+	})
+	w.Run()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	w.Process(ctx, "test worker panic")
+	w.Shutdown()
+}
+
+// TestWorkerPanic Woker waits for processing to finish and closes
+func TestWaitWorker(t *testing.T) {
+	w := NewWorker()
+	w.HandleWork(0, 1, 2*time.Second, func(ctx context.Context, data interface{}) {
+		time.Sleep(5 * time.Second)
+		t.Log(ctx.Deadline())
+		t.Log(data)
+	})
+	w.Run()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	w.Process(ctx, "send message")
+
+	// shutdown worker
+	w.Shutdown()
+
+	// 5s after print
+	t.Log("worker shutdown")
 }
