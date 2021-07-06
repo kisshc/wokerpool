@@ -3,20 +3,26 @@ Worker pool is a safe groutine pool that supports timeout control
 
 ## Base use case
 ```go
-func TestWorker(t *testing.T) {
-    w := NewWorker()
-    w.HandleWork(1, 1, 2*time.Second, func(ctx context.Context, data interface{}) {
-        t.Log(ctx.Deadline())
-        t.Log(data)
-    })
-    w.Run()
+package main
 
-    ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-    defer cancel()
-    w.Process(ctx, "hello worker pool")
-    
-    time.Sleep(1 * time.Second)
-    w.Shutdown()
+import (
+	"context"
+	"fmt"
+	"github.com/kisshc/workerpool"
+	"time"
+)
+
+func main() {
+	w := worker.NewWorker()
+	w.HandleWork(1, 1, 3*time.Second, func(ctx context.Context, data interface{}) {
+		fmt.Println(data)
+	})
+	w.Run()
+
+	w.Process(context.Background(), "base use case")
+
+	time.Sleep(1 * time.Second)
+	w.Shutdown()
 }
 ```
 
