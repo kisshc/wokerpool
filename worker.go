@@ -23,7 +23,7 @@ type IWorker interface {
 	Process(ctx context.Context, data interface{}) error
 }
 
-type Worker struct {
+type worker struct {
 	ctx    context.Context
 	num    int
 	maxSec time.Duration
@@ -37,7 +37,7 @@ type Worker struct {
 
 func NewWorker() IWorker {
 	g, ctx := errgroup.WithContext(context.Background())
-	w := &Worker{
+	w := &worker{
 		ctx:   ctx,
 		group: g,
 		stop:  make(chan struct{}),
@@ -45,14 +45,14 @@ func NewWorker() IWorker {
 	return w
 }
 
-func (w *Worker) HandleWork(pipeSize int, poolSize int, maxSec time.Duration, fun handFun) {
+func (w *worker) HandleWork(pipeSize int, poolSize int, maxSec time.Duration, fun handFun) {
 	w.num = poolSize
 	w.fun = fun
 	w.maxSec = maxSec
 	w.data = make(chan interface{}, pipeSize)
 }
 
-func (w *Worker) Process(ctx context.Context, data interface{}) error {
+func (w *worker) Process(ctx context.Context, data interface{}) error {
 	select {
 	case <-ctx.Done():
 		return ErrProcessTimeout
@@ -61,14 +61,14 @@ func (w *Worker) Process(ctx context.Context, data interface{}) error {
 	}
 }
 
-func (w *Worker) Run() error {
+func (w *worker) Run() error {
 	w.runOnce.Do(func() {
 		run(w)
 	})
 	return nil
 }
 
-func run(w *Worker) error {
+func run(w *worker) error {
 	for i := 0; i < w.num; i++ {
 		w.group.Go(func() error {
 		cycle:
@@ -78,7 +78,7 @@ func run(w *Worker) error {
 					func() {
 						defer func() {
 							if err := recover(); err != nil {
-								fmt.Printf("Worker fatal error：%s\n", err)
+								fmt.Printf("worker fatal error：%s\n", err)
 							}
 						}()
 						ctxFun, cancel := context.WithTimeout(w.ctx, w.maxSec)
@@ -95,7 +95,7 @@ func run(w *Worker) error {
 	return nil
 }
 
-func (w *Worker) Shutdown() error {
+func (w *worker) Shutdown() error {
 	close(w.stop)
 	err := w.group.Wait()
 	if err != nil {
