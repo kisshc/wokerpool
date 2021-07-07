@@ -8,7 +8,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/kisshc/workerpool"
+	"github.com/zeuszhao-hub/workerpool"
 	"time"
 )
 
